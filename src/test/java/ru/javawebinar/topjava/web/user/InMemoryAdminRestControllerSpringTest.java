@@ -1,10 +1,10 @@
 package ru.javawebinar.topjava.web.user;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import ru.javawebinar.topjava.UserTestData;
@@ -13,30 +13,37 @@ import ru.javawebinar.topjava.repository.inmemory.InMemoryUserRepositoryImpl;
 import ru.javawebinar.topjava.util.exception.NotFoundException;
 import ru.javawebinar.topjava.web.user.AdminRestController;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 import static ru.javawebinar.topjava.UserTestData.ADMIN;
 
-//@ContextConfiguration({
-//        "classpath:spring/spring-app.xml",
-//        "classpath:spring/spring-db.xml"
-//})
-//@RunWith(SpringRunner.class)
-//    fixme - repair this later - after resolving all profiles issues
 public class InMemoryAdminRestControllerSpringTest {
 
-//    @Autowired
-    private AdminRestController controller;
+    private static ConfigurableApplicationContext appCtx;
+    private static AdminRestController controller;
 
-//    @Autowired
-    private InMemoryUserRepositoryImpl repository;
+    @BeforeClass
+    public static void beforeClass() {
+        appCtx = new ClassPathXmlApplicationContext("spring/spring-app.xml", "spring/inmemory.xml");
+        System.out.println("\n" + Arrays.toString(appCtx.getBeanDefinitionNames()) + "\n");
+        controller = appCtx.getBean(AdminRestController.class);
+    }
 
-//    @Before
+
+    @AfterClass
+    public static void afterClass() {
+        appCtx.close();
+    }
+
+    @Before
     public void setUp() throws Exception {
+        // re-initialize
+        InMemoryUserRepositoryImpl repository = appCtx.getBean(InMemoryUserRepositoryImpl.class);
         repository.init();
     }
 
-//    @Test
+    @Test
     public void delete() throws Exception {
         controller.delete(UserTestData.USER_ID);
         Collection<User> users = controller.getAll();
@@ -44,7 +51,7 @@ public class InMemoryAdminRestControllerSpringTest {
         Assert.assertEquals(users.iterator().next(), ADMIN);
     }
 
-//    @Test(expected = NotFoundException.class)
+    @Test(expected = NotFoundException.class)
     public void deleteNotFound() throws Exception {
         controller.delete(10);
     }
