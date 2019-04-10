@@ -33,7 +33,7 @@ public class InMemoryAdminRestControllerSpringTest {
 
     @AfterAll
     public static void afterClass() {
-        appCtx.close();
+//        appCtx.close();
     }
 
     @BeforeEach
