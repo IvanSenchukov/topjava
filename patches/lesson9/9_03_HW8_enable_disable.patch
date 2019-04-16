@@ -1,0 +1,196 @@
+Index: src/main/webapp/resources/js/topjava.users.js
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/resources/js/topjava.users.js	(date 1554808669000)
++++ src/main/webapp/resources/js/topjava.users.js	(date 1554812823484)
+@@ -1,7 +1,24 @@
++const userAjaxUrl = "ajax/admin/users/";
++
++function enable(chkbox, id) {
++    const enabled = chkbox.is(":checked");
++//  https://stackoverflow.com/a/22213543/548473
++    $.ajax({
++        url: userAjaxUrl + id,
++        type: "POST",
++        data: "enabled=" + enabled
++    }).done(function () {
++        chkbox.closest("tr").attr("data-userEnabled", enabled);
++        successNoty(enabled ? "Enabled" : "Disabled");
++    }).fail(function () {
++        $(chkbox).prop("checked", !enabled);
++    });
++}
++
+ // $(document).ready(function () {
+ $(function () {
+     makeEditable({
+-            ajaxUrl: "ajax/admin/users/",
++            ajaxUrl: userAjaxUrl,
+             datatableApi: $("#datatable").DataTable({
+                 "paging": false,
+                 "info": true,
+@@ -38,7 +55,7 @@
+                 ]
+             }),
+             updateTable: function () {
+-                $.get("ajax/admin/users/", updateTableByData);
++                $.get(userAjaxUrl, updateTableByData);
+             }
+         }
+     );
+Index: src/main/java/ru/javawebinar/topjava/web/user/AdminUIController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javawebinar/topjava/web/user/AdminUIController.java	(date 1554808669000)
++++ src/main/java/ru/javawebinar/topjava/web/user/AdminUIController.java	(date 1554812629006)
+@@ -37,4 +37,11 @@
+             super.create(user);
+         }
+     }
++
++    @Override
++    @PostMapping("/{id}")
++    @ResponseStatus(value = HttpStatus.NO_CONTENT)
++    public void enable(@PathVariable("id") int id, @RequestParam("enabled") boolean enabled) {
++        super.enable(id, enabled);
++    }
+ }
+Index: src/main/java/ru/javawebinar/topjava/web/user/AbstractUserController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javawebinar/topjava/web/user/AbstractUserController.java	(date 1554808669000)
++++ src/main/java/ru/javawebinar/topjava/web/user/AbstractUserController.java	(date 1554808727308)
+@@ -48,4 +48,9 @@
+         log.info("getByEmail {}", email);
+         return service.getByEmail(email);
+     }
++
++    public void enable(int id, boolean enabled) {
++        log.info(enabled ? "enable {}" : "disable {}", id);
++        service.enable(id, enabled);
++    }
+ }
+\ No newline at end of file
+Index: src/main/webapp/resources/css/style.css
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/resources/css/style.css	(date 1554808669000)
++++ src/main/webapp/resources/css/style.css	(date 1554808727313)
+@@ -10,6 +10,10 @@
+     cursor: pointer;
+ }
+ 
++tr[data-userEnabled="false"] {
++    opacity: 0.3;
++}
++
+ /*https://getbootstrap.com/docs/4.0/examples/sticky-footer/sticky-footer.css*/
+ html {
+     position: relative;
+Index: src/main/java/ru/javawebinar/topjava/service/UserService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javawebinar/topjava/service/UserService.java	(date 1554808669000)
++++ src/main/java/ru/javawebinar/topjava/service/UserService.java	(date 1554808727295)
+@@ -20,5 +20,7 @@
+ 
+     List<User> getAll();
+ 
++    void enable(int id, boolean enable);
++
+     User getWithMeals(int id);
+ }
+\ No newline at end of file
+Index: src/test/java/ru/javawebinar/topjava/service/AbstractUserServiceTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/test/java/ru/javawebinar/topjava/service/AbstractUserServiceTest.java	(date 1554808669000)
++++ src/test/java/ru/javawebinar/topjava/service/AbstractUserServiceTest.java	(date 1554808727339)
+@@ -13,7 +13,7 @@
+ import java.util.Date;
+ import java.util.List;
+ 
+-import static org.junit.jupiter.api.Assertions.assertThrows;
++import static org.junit.jupiter.api.Assertions.*;
+ import static ru.javawebinar.topjava.UserTestData.*;
+ 
+ public abstract class AbstractUserServiceTest extends AbstractServiceTest {
+@@ -89,4 +89,12 @@
+         List<User> all = service.getAll();
+         assertMatch(all, ADMIN, USER);
+     }
++
++    @Test
++    void enable() {
++        service.enable(USER_ID, false);
++        assertFalse(service.get(USER_ID).isEnabled());
++        service.enable(USER_ID, true);
++        assertTrue(service.get(USER_ID).isEnabled());
++    }
+ }
+\ No newline at end of file
+Index: src/main/webapp/WEB-INF/jsp/users.jsp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/webapp/WEB-INF/jsp/users.jsp	(date 1554808669000)
++++ src/main/webapp/WEB-INF/jsp/users.jsp	(date 1554808727333)
+@@ -31,12 +31,12 @@
+             </thead>
+             <c:forEach items="${users}" var="user">
+                 <jsp:useBean id="user" type="ru.javawebinar.topjava.model.User"/>
+-                <tr>
++                <tr data-userEnabled="${user.enabled}">
+                     <td><c:out value="${user.name}"/></td>
+                     <td><a href="mailto:${user.email}">${user.email}</a></td>
+                     <td>${user.roles}</td>
+                     <td><input type="checkbox"
+-                               <c:if test="${user.enabled}">checked</c:if> id="${user.id}"/></td>
++                               <c:if test="${user.enabled}">checked</c:if> onclick="enable($(this), ${user.id})"/></td>
+                     <td><fmt:formatDate value="${user.registered}" pattern="dd-MMMM-yyyy"/></td>
+                     <td><a><span class="fa fa-pencil"></span></a></td>
+                     <td><a onclick="deleteRow(${user.id})"><span class="fa fa-remove"></span></a></td>
+Index: src/main/java/ru/javawebinar/topjava/service/UserServiceImpl.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javawebinar/topjava/service/UserServiceImpl.java	(date 1554808669000)
++++ src/main/java/ru/javawebinar/topjava/service/UserServiceImpl.java	(date 1554808727302)
+@@ -4,6 +4,7 @@
+ import org.springframework.cache.annotation.CacheEvict;
+ import org.springframework.cache.annotation.Cacheable;
+ import org.springframework.stereotype.Service;
++import org.springframework.transaction.annotation.Transactional;
+ import org.springframework.util.Assert;
+ import ru.javawebinar.topjava.model.User;
+ import ru.javawebinar.topjava.repository.UserRepository;
+@@ -61,6 +62,15 @@
+         checkNotFoundWithId(repository.save(user), user.getId());
+     }
+ 
++    @CacheEvict(value = "users", allEntries = true)
++    @Override
++    @Transactional
++    public void enable(int id, boolean enabled) {
++        User user = get(id);
++        user.setEnabled(enabled);
++        repository.save(user);  // !! need only for JDBC implementation
++    }
++
+     @Override
+     public User getWithMeals(int id) {
+         return checkNotFoundWithId(repository.getWithMeals(id), id);
