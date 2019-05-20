@@ -1,0 +1,78 @@
+Index: src/main/java/ru/javawebinar/topjava/web/meal/MealUIController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javawebinar/topjava/web/meal/MealUIController.java	(revision d0ae4c2904395d013c3a2ce6a4b3e56a7926d7f7)
++++ src/main/java/ru/javawebinar/topjava/web/meal/MealUIController.java	(date 1555240225618)
+@@ -25,16 +25,16 @@
+     @Override
+     @DeleteMapping(value = "/{id}")
+     @ResponseStatus(value = HttpStatus.NO_CONTENT)
+-    public void delete(@PathVariable("id") int id) {
++    public void delete(@PathVariable int id) {
+         super.delete(id);
+     }
+ 
+     @PostMapping
+     @ResponseStatus(value = HttpStatus.NO_CONTENT)
+-    public void createOrUpdate(@RequestParam("id") Integer id,
+-                               @RequestParam("dateTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTime,
+-                               @RequestParam("description") String description,
+-                               @RequestParam("calories") int calories) {
++    public void createOrUpdate(@RequestParam Integer id,
++                               @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTime,
++                               @RequestParam String description,
++                               @RequestParam int calories) {
+         Meal meal = new Meal(id, dateTime, description, calories);
+         if (meal.isNew()) {
+             super.create(meal);
+@@ -44,10 +44,10 @@
+     @Override
+     @GetMapping(value = "/filter", produces = MediaType.APPLICATION_JSON_VALUE)
+     public List<MealTo> getBetween(
+-            @RequestParam(value = "startDate", required = false) LocalDate startDate,
+-            @RequestParam(value = "startTime", required = false) LocalTime startTime,
+-            @RequestParam(value = "endDate", required = false) LocalDate endDate,
+-            @RequestParam(value = "endTime", required = false) LocalTime endTime) {
++            @RequestParam(required = false) LocalDate startDate,
++            @RequestParam(required = false) LocalTime startTime,
++            @RequestParam(required = false) LocalDate endDate,
++            @RequestParam(required = false) LocalTime endTime) {
+         return super.getBetween(startDate, startTime, endDate, endTime);
+     }
+ }
+\ No newline at end of file
+Index: src/main/java/ru/javawebinar/topjava/web/user/AdminUIController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/ru/javawebinar/topjava/web/user/AdminUIController.java	(revision d0ae4c2904395d013c3a2ce6a4b3e56a7926d7f7)
++++ src/main/java/ru/javawebinar/topjava/web/user/AdminUIController.java	(date 1555240225629)
+@@ -25,14 +25,14 @@
+ 
+     @Override
+     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+-    public User get(@PathVariable("id") int id) {
++    public User get(@PathVariable int id) {
+         return super.get(id);
+     }
+ 
+     @Override
+     @DeleteMapping("/{id}")
+     @ResponseStatus(value = HttpStatus.NO_CONTENT)
+-    public void delete(@PathVariable("id") int id) {
++    public void delete(@PathVariable int id) {
+         super.delete(id);
+     }
+ 
+@@ -63,7 +63,7 @@
+     @Override
+     @PostMapping("/{id}")
+     @ResponseStatus(value = HttpStatus.NO_CONTENT)
+-    public void enable(@PathVariable("id") int id, @RequestParam("enabled") boolean enabled) {
++    public void enable(@PathVariable int id, @RequestParam boolean enabled) {
+         super.enable(id, enabled);
+     }
+ }
